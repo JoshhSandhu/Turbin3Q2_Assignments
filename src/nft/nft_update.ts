@@ -1,5 +1,5 @@
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import wallet from "/Users/icarus/.config/solana/id.json";
+import wallet from "../../devnet-wallet.json";
 import {
   createSignerFromKeypair,
   publicKey,
@@ -23,11 +23,11 @@ umi.use(mplCore());
   try {
     //paste the asset address printed by nft_mint.ts
     const assetAddress = publicKey(
-      "4u3Y3X5vrntu8kDBKvqMCodooxsvdrp9LXUoTqFtTDke",
+      "2kkSw97SeEGQJ1Z57jPToCC2BJEcwkTo8wkDXmMKyrHk",
     );
 
     //the new on-chain name from nft_metadata.ts
-    const newName = "From thanks Class to EYESPY";
+    const newName = "AI Layer 2 Updated";
 
     const asset = await fetchAsset(umi, assetAddress);
 

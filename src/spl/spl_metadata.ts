@@ -14,7 +14,7 @@ import {
 import bs58 from "bs58";
 
 //paste your mint address got from spl_init.ts
-const mint = publicKey("E2Jazz2VXcVL9RZkn6ZFA4q1YGvgEvrns3Gr6w72DC4w");
+const mint = publicKey("AuQbUyQcHu3B5LrcgAbibkSgoP6CfmsCvkop8bYAiCWD");
 
 const umi = createUmi("https://api.devnet.solana.com");
 

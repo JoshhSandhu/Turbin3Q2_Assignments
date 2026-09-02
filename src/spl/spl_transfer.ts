@@ -27,7 +27,7 @@ const rpcSubscriptions = createSolanaRpcSubscriptions(
 );
 
 //paste your mint address got from spl_init.ts
-const mint = address("E2Jazz2VXcVL9RZkn6ZFA4q1YGvgEvrns3Gr6w72DC4w");
+const mint = address("AuQbUyQcHu3B5LrcgAbibkSgoP6CfmsCvkop8bYAiCWD");
 
 //paste the address of the recipient
 const to = address("9EUd4VNcjMAysd7zQk3Q1a4tb28BYndLNBAQDiYnHJ64");
@@ -63,7 +63,7 @@ const to = address("9EUd4VNcjMAysd7zQk3Q1a4tb28BYndLNBAQDiYnHJ64");
     });
 
     const transferTx = getTransferCheckedInstruction({
-        amount: 150n * token_decimals,
+        amount: 150n * 1_000_000n,
         authority: signer.address,
         decimals: 0,
         source: fromAta,

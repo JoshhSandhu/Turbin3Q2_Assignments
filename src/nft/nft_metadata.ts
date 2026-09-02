@@ -25,14 +25,32 @@ umi.use(signerIdentity(signer));
   try {
     //change the image uri to your image uri obtained from nft_image.ts
     const image =
-      "https://gateway.irys.xyz/5EDyiNrMWfhjdsEwXLrwkHPwZoZB2m1A2Kudrfxo1tpr";
+      "https://gateway.irys.xyz/8vexLr2bYE1HNt4YfieYQXwhkJFX7HqX8U978dK1diDE";
 
     //json scheme : https://www.metaplex.com/docs/smart-contracts/core/json-schema
     
     //change the metadata from the one recived
-    
-    const metadata = 
-    
+    const metadata = {
+      name: "AI Layer 2",
+      symbol: "AIL2",
+      description: "The ultimate hacker on a toy laptop. Built different.",
+      image,
+      attributes: [
+        { trait_type: "Background", value: "Matrix" },
+        { trait_type: "Vibe", value: "Hacker" },
+        { trait_type: "Accessory", value: "Pink Shades" },
+        { trait_type: "Device", value: "Toy Laptop" },
+      ],
+      properties: {
+        files: [
+          {
+            type: "image/jpeg",
+            uri: image,
+          },
+        ],
+      },
+    };
+
     const myUri = await umi.uploader.uploadJson(metadata);
     
     console.log(`metadata uri: ${myUri} `);

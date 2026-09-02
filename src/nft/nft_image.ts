@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config({ path: "e.env" });
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
   createGenericFile,
@@ -27,7 +29,9 @@ umi.use(signerIdentity(signer));
 (async () => {
   try {
     //chanege image path to your image path
-    const image = await readFile("file-path");
+    const imagePath = process.env.IMAGE_PATH;
+    if (!imagePath) throw new Error("IMAGE_PATH not set in e.env");
+    const image = await readFile(imagePath);
 
     //change the image name and mime type
     const file = createGenericFile(image, "generug.png", { contentType: "image/png" });

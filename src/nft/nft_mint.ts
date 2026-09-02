@@ -22,14 +22,14 @@ umi.use(mplCore());
 (async () => {
   try {
     const metadataUri =
-      "https://gateway.irys.xyz/BihKZnhMCvxN3i34cv25eEyFgUvBVGJQn1Gp11D4LxEi ";
+      "https://gateway.irys.xyz/2UyAFwZ8c7LRkKxxJvpaF8UgT6BN9reMeNXPxNjxMNeC";
     const asset = generateSigner(umi);
 
     //add you nft name and metadata uri
     const tx = await create(umi, {
       asset,
       uri: metadataUri,
-      name: "Thanks Class",
+      name: "AI Layer 2",
     });
 
     const s = (await tx.sendAndConfirm(umi)).signature;
