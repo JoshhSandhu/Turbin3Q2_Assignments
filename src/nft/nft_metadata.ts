@@ -28,10 +28,15 @@ umi.use(signerIdentity(signer));
       "https://gateway.irys.xyz/5EDyiNrMWfhjdsEwXLrwkHPwZoZB2m1A2Kudrfxo1tpr";
 
     //json scheme : https://www.metaplex.com/docs/smart-contracts/core/json-schema
-    //change the metadata
-    // const metadata =
-    // const myUri =
-    // console.log(`metadata uri: ${myUri} `);
+    
+    //change the metadata from the one recived
+    
+    const metadata = 
+    
+    const myUri = await umi.uploader.uploadJson(metadata);
+    
+    console.log(`metadata uri: ${myUri} `);
+  
   } catch (error) {
     console.log("error", error);
   }

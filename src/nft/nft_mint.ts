@@ -26,11 +26,17 @@ umi.use(mplCore());
     const asset = generateSigner(umi);
 
     //add you nft name and metadata uri
-    // const tx = await create()
+    const tx = await create(umi, {
+      asset,
+      uri: metadataUri,
+      name: "Thanks Class",
+    });
 
-    // const signature = base58.deserialize(tx.signature)[0];
+    const s = (await tx.sendAndConfirm(umi)).signature;
 
-    // console.log(`signature ${signature} , asset : ${asset.publicKey}`);
+    const signature = base58.deserialize(s)[0];
+
+    console.log(`signature ${signature} , asset : ${asset.publicKey}`);
   } catch (e) {
     console.log(`errior ${e}`);
   }

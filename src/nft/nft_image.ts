@@ -30,10 +30,12 @@ umi.use(signerIdentity(signer));
     const image = await readFile("file-path");
 
     //change the image name and mime type
-    // const file =
+    const file = createGenericFile(image, "generug.png", { contentType: "image/png" });
 
-    // const [myUri] =
-    // console.log("Your image URI: ", myUri);
+    const [myUri] = await umi.uploader.upload([file]);
+     
+    console.log("Your image URI: ", myUri);
+  
   } catch (error) {
     console.log(error);
   }
