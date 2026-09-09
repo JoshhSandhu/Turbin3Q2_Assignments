@@ -71,7 +71,6 @@ pub struct Take<'info> {
 }
 
 impl<'info> Take<'info> {
-    //Deposit the taker's token B into the maker's ATA, the taker's side of the swap
     pub fn deposit(&mut self) -> Result<()> {
         let cpi_accounts = TransferChecked {
             from: self.taker_ata_b.to_account_info(),
@@ -85,7 +84,6 @@ impl<'info> Take<'info> {
         transfer_checked(cpi_context, self.escrow.receive, self.mint_b.decimals)
     }
 
-    //Release token A from the vault to the taker and close the vault
     pub fn withdraw_and_close_vault(&mut self) -> Result<()> {
         let maker_key = self.maker.key();
         let seed_bytes = self.escrow.seed.to_le_bytes();

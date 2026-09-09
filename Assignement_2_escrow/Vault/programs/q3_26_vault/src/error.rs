@@ -4,4 +4,6 @@ use anchor_lang::prelude::*;
 pub enum ErrorCode {
     #[msg("Deposit amount must be greater than zero")]
     InvalidAmount,
+    #[msg("Not enough lamports above the rent exempt floor to cover this withdrawal")]
+    InsufficientBalance,
 }

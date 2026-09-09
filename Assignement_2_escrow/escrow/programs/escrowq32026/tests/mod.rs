@@ -173,8 +173,6 @@ fn test_make_and_refund() {
     assert!(program.get_account(&vault).is_none());
 }
 
-// Shared setup for the take tests: two mints, a funded maker and taker, and an escrow
-// already created by `make`. Returns everything the take instruction needs.
 struct TakeFixture {
     taker: Keypair,
     maker: Pubkey,
@@ -193,8 +191,6 @@ const RECEIVE: u64 = 10_000_000;
 fn setup_escrow(program: &mut LiteSVM, payer: &Keypair, expiration: i64) -> TakeFixture {
     let maker = payer.pubkey();
 
-    // The taker is a second party with its own SOL, since it pays for the ATAs the take
-    // instruction creates, so it needs a balance of its own.
     let taker = Keypair::new();
     program.airdrop(&taker.pubkey(), 1_000_000_000).unwrap();
 
@@ -209,7 +205,6 @@ fn setup_escrow(program: &mut LiteSVM, payer: &Keypair, expiration: i64) -> Take
         .send()
         .unwrap();
 
-    // The maker holds token A and the taker holds token B, the two sides of the swap.
     let maker_ata_a = CreateAssociatedTokenAccount::new(program, payer, &mint_a)
         .owner(&maker)
         .send()
@@ -233,8 +228,6 @@ fn setup_escrow(program: &mut LiteSVM, payer: &Keypair, expiration: i64) -> Take
     .0;
     let vault = associated_token::get_associated_token_address(&escrow, &mint_a);
 
-    // These two are created by the take instruction itself (`init_if_needed`),
-    // so we only derive their addresses here.
     let taker_ata_a = associated_token::get_associated_token_address(&taker.pubkey(), &mint_a);
     let maker_ata_b = associated_token::get_associated_token_address(&maker, &mint_b);
 
@@ -279,7 +272,6 @@ fn setup_escrow(program: &mut LiteSVM, payer: &Keypair, expiration: i64) -> Take
     }
 }
 
-// Build the take instruction for a fixture. The taker signs, the payer funds the tx.
 fn take_ix(f: &TakeFixture) -> Instruction {
     Instruction {
         program_id: escrowq32026::id(),
@@ -306,14 +298,11 @@ fn take_ix(f: &TakeFixture) -> Instruction {
 fn test_make_and_take() {
     let (mut program, payer) = setup();
 
-    // Year 2533, comfortably in the future, so the expiration check passes.
     let f = setup_escrow(&mut program, &payer, 17780206209);
 
     let message = Message::new(&[take_ix(&f)], Some(&payer.pubkey()));
     let recent_blockhash = program.latest_blockhash();
 
-    // Both the fee payer and the taker must sign: the taker is the transfer authority
-    // for token B and the payer for the two ATAs the instruction creates.
     let transaction = Transaction::new(&[&payer, &f.taker], message, recent_blockhash);
     let tx = program.send_transaction(transaction).unwrap();
 
@@ -321,21 +310,18 @@ fn test_make_and_take() {
     msg!("CUs Consumed: {}", tx.compute_units_consumed);
     msg!("Tx Signature: {}", tx.signature);
 
-    // The taker received token A out of the vault...
     let taker_ata_a_account = program.get_account(&f.taker_ata_a).unwrap();
     let taker_ata_a_data = spl_token::state::Account::unpack(&taker_ata_a_account.data).unwrap();
     assert_eq!(taker_ata_a_data.amount, DEPOSIT);
     assert_eq!(taker_ata_a_data.mint, f.mint_a);
     assert_eq!(taker_ata_a_data.owner, f.taker.pubkey());
 
-    // ...and the maker received token B from the taker.
     let maker_ata_b_account = program.get_account(&f.maker_ata_b).unwrap();
     let maker_ata_b_data = spl_token::state::Account::unpack(&maker_ata_b_account.data).unwrap();
     assert_eq!(maker_ata_b_data.amount, RECEIVE);
     assert_eq!(maker_ata_b_data.mint, f.mint_b);
     assert_eq!(maker_ata_b_data.owner, f.maker);
 
-    // Both program-owned accounts are closed and their rent returned.
     assert!(program.get_account(&f.escrow).is_none());
     assert!(program.get_account(&f.vault).is_none());
 }
@@ -347,8 +333,6 @@ fn test_take_after_expiry() {
     let expiration = 1_000_000_000i64;
     let f = setup_escrow(&mut program, &payer, expiration);
 
-    // LiteSVM's default clock starts at unix_timestamp 0, so an expiration in the past
-    // has to be produced by moving the clock forward rather than by picking a small value.
     let mut clock = program.get_sysvar::<Clock>();
     assert!(
         clock.unix_timestamp <= expiration,
@@ -363,7 +347,6 @@ fn test_take_after_expiry() {
 
     let failed = program.send_transaction(transaction).unwrap_err();
 
-    // Confirm the failure is the expiration check and not something incidental.
     let expected: u32 = escrowq32026::error::ErrorCode::EscrowExpired.into();
     let err = format!("{:?}", failed.err);
     assert!(
@@ -378,9 +361,113 @@ fn test_take_after_expiry() {
         failed.meta.logs
     );
 
-    // Nothing moved: the escrow and vault are untouched.
     assert!(program.get_account(&f.escrow).is_some());
     let vault_account = program.get_account(&f.vault).unwrap();
     let vault_data = spl_token::state::Account::unpack(&vault_account.data).unwrap();
     assert_eq!(vault_data.amount, DEPOSIT);
+}
+
+fn update_ix(f: &TakeFixture, receive: u64, expiration: Option<i64>) -> Instruction {
+    Instruction {
+        program_id: escrowq32026::id(),
+        accounts: escrowq32026::accounts::Update {
+            maker: f.maker,
+            escrow: f.escrow,
+        }
+        .to_account_metas(None),
+        data: escrowq32026::instruction::Update {
+            receive,
+            expiration,
+        }
+        .data(),
+    }
+}
+
+#[test]
+fn test_make_update_and_take() {
+    let (mut program, payer) = setup();
+
+    let f = setup_escrow(&mut program, &payer, 17780206209);
+
+    const NEW_RECEIVE: u64 = RECEIVE / 2;
+    let new_expiration = 17780206209i64 + 3600;
+
+    let message = Message::new(
+        &[update_ix(&f, NEW_RECEIVE, Some(new_expiration))],
+        Some(&payer.pubkey()),
+    );
+    let recent_blockhash = program.latest_blockhash();
+    let transaction = Transaction::new(&[&payer], message, recent_blockhash);
+    let tx = program.send_transaction(transaction).unwrap();
+
+    msg!("\n\nUpdate transaction sucessful");
+    msg!("CUs Consumed: {}", tx.compute_units_consumed);
+
+    let escrow_account = program.get_account(&f.escrow).unwrap();
+    let escrow_data =
+        escrowq32026::state::Escrow::try_deserialize(&mut escrow_account.data.as_ref()).unwrap();
+    assert_eq!(escrow_data.receive, NEW_RECEIVE);
+    assert_eq!(escrow_data.expiration, new_expiration);
+    assert_eq!(escrow_data.maker, f.maker);
+    assert_eq!(escrow_data.seed, 123u64);
+
+    let vault_account = program.get_account(&f.vault).unwrap();
+    let vault_data = spl_token::state::Account::unpack(&vault_account.data).unwrap();
+    assert_eq!(
+        vault_data.amount, DEPOSIT,
+        "update must not touch the vault"
+    );
+
+    let message = Message::new(&[take_ix(&f)], Some(&payer.pubkey()));
+    let recent_blockhash = program.latest_blockhash();
+    let transaction = Transaction::new(&[&payer, &f.taker], message, recent_blockhash);
+    program.send_transaction(transaction).unwrap();
+
+    let maker_ata_b_account = program.get_account(&f.maker_ata_b).unwrap();
+    let maker_ata_b_data = spl_token::state::Account::unpack(&maker_ata_b_account.data).unwrap();
+    assert_eq!(
+        maker_ata_b_data.amount, NEW_RECEIVE,
+        "taker should have paid the updated price"
+    );
+
+    let taker_ata_a_account = program.get_account(&f.taker_ata_a).unwrap();
+    let taker_ata_a_data = spl_token::state::Account::unpack(&taker_ata_a_account.data).unwrap();
+    assert_eq!(taker_ata_a_data.amount, DEPOSIT);
+
+    assert!(program.get_account(&f.escrow).is_none());
+    assert!(program.get_account(&f.vault).is_none());
+}
+
+#[test]
+fn test_update_by_non_maker_fails() {
+    let (mut program, payer) = setup();
+
+    let f = setup_escrow(&mut program, &payer, 17780206209);
+
+    let ix = Instruction {
+        program_id: escrowq32026::id(),
+        accounts: escrowq32026::accounts::Update {
+            maker: f.taker.pubkey(),
+            escrow: f.escrow,
+        }
+        .to_account_metas(None),
+        data: escrowq32026::instruction::Update {
+            receive: 1,
+            expiration: None,
+        }
+        .data(),
+    };
+
+    let message = Message::new(&[ix], Some(&f.taker.pubkey()));
+    let recent_blockhash = program.latest_blockhash();
+    let transaction = Transaction::new(&[&f.taker], message, recent_blockhash);
+
+    program
+        .send_transaction(transaction)
+        .expect_err("a non-maker must not be able to re-price the escrow");
+
+    let escrow_account = program.get_account(&f.escrow).unwrap();
+    let escrow_data =
+        escrowq32026::state::Escrow::try_deserialize(&mut escrow_account.data.as_ref()).unwrap();
+    assert_eq!(escrow_data.receive, RECEIVE);
 }
