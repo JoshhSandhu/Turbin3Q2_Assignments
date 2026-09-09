@@ -11,7 +11,6 @@ Built with [@solana/kit](https://www.solanakit.com/) for the raw transaction wor
 | 1. Mint and transfer your own SPL token | `spl_init` → `spl_metadata` → `spl_mint` → `spl_transfer` | done |
 | 2. Mint an NFT using MPL Core | `nft_image` → `nft_metadata` → `nft_mint` | done |
 | 3. Update the NFT name and metadata as update authority | `nft_update` | done |
-| 4 & 5 (extension) | NFT transfer and burn | not attempted |
 
 ## Setup
 
