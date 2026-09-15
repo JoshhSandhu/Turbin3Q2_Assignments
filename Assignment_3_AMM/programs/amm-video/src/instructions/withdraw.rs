@@ -78,7 +78,7 @@ impl<'info> Withdraw<'info> {
             amount,
             6,
         )
-        .unwrap();
+        .map_err(AmmError::from)?;
         let (x, y) = (amounts.x, amounts.y);
 
         require!(x >= min_x && y >= min_y, AmmError::SlippageExceeded);

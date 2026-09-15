@@ -74,6 +74,7 @@ impl<'info> Deposit<'info> {
 
         let (x, y) =
             if self.mint_lp.supply == 0 && self.vault_x.amount == 0 && self.vault_y.amount == 0 {
+                require!(max_x > 0 && max_y > 0, AmmError::InvalidAmount);
                 (max_x, max_y)
             } else {
                 let amounts = ConstantProduct::xy_deposit_amounts_from_l(
@@ -83,7 +84,7 @@ impl<'info> Deposit<'info> {
                     amount,
                     6,
                 )
-                .unwrap();
+                .map_err(AmmError::from)?;
 
                 require!(
                     amounts.x <= max_x && amounts.y <= max_y,
