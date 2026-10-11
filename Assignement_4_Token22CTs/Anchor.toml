@@ -1,0 +1,22 @@
+skip_local_validator = true
+
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+remit_stablecoin = "GBKGGvYbHe2Eq2DCkupKeNNLibNcmtGbDfRsoVdpsBoa"
+
+[programs.devnet]
+remit_stablecoin = "GBKGGvYbHe2Eq2DCkupKeNNLibNcmtGbDfRsoVdpsBoa"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
